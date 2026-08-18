@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -19,7 +20,7 @@ type Task struct {
 func main() {
 	tasks, err := loadTasks(dataFile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error loading tasks %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error loading tasks: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -28,7 +29,7 @@ func main() {
 
 	switch command {
 	case "add":
-		addTask(tasks, args)
+		tasks, err = addTask(tasks, args)
 	case "list":
 		listTasks(tasks)
 	case "update":
@@ -41,6 +42,13 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Unknown command %q\n", command)
 		printUsage()
 	}
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
+	}
+
+	saveTask(tasks, dataFile)
 }
 
 func printUsage() {
@@ -50,6 +58,15 @@ func printUsage() {
 	println("  update id=<task ID> [description=<new description>] [done=<true|false>] - Update a task")
 	println("  delete id=<task ID> - Delete a task")
 	println("  help|-h|--help - Show this help message")
+}
+
+func saveTask(tasks []Task, path string) error {
+	data, err := json.MarshalIndent(tasks, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(path, data, 0o644)
 }
 
 func loadTasks(path string) ([]Task, error) {
@@ -71,7 +88,22 @@ func loadTasks(path string) ([]Task, error) {
 	return tasks, nil
 }
 
-func listTasks(tasks []Task)                 {}
-func addTask(tasks []Task, args []string)    {}
+func listTasks(tasks []Task) {}
+func addTask(tasks []Task, args []string) ([]Task, error) {
+	if len(args) == 0 {
+		return nil, errors.New("Error: Task description is required")
+	}
+
+	description := args[0]
+	task := Task{
+		ID:          len(tasks) + 1,
+		Description: description,
+		Done:        false,
+		CreatedAt:   time.Now(),
+	}
+
+	return append(tasks, task), nil
+}
+
 func updateTask(tasks []Task, args []string) {}
 func deleteTask(tasks []Task, args []string) {}
