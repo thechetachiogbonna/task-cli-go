@@ -123,9 +123,9 @@ func listTasks(tasks []Task, args []string) error {
 	}
 
 	for _, task := range filteredTasks {
-		status := "❌"
+		status := "×"
 		if task.Done {
-			status = "✅"
+			status = "🗸"
 		}
 		fmt.Printf("[%s] %d: %s\n", status, task.ID, task.Description)
 	}
