@@ -31,7 +31,7 @@ func main() {
 	case "add":
 		tasks, err = addTask(tasks, args)
 	case "list":
-		listTasks(tasks)
+		err = listTasks(tasks, args)
 	case "update":
 		updateTask(tasks, args)
 	case "delete":
@@ -45,6 +45,7 @@ func main() {
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
+		printUsage()
 		os.Exit(1)
 	}
 
@@ -88,7 +89,49 @@ func loadTasks(path string) ([]Task, error) {
 	return tasks, nil
 }
 
-func listTasks(tasks []Task) {}
+func listTasks(tasks []Task, args []string) error {
+	var filter string
+
+	if len(args) > 0 {
+		filter = args[0]
+	}
+
+	if filter == "-a" {
+		filter = "--all"
+	}
+
+	if filter != "--completed" && filter != "--pending" && filter != "--all" {
+		return fmt.Errorf("Unknown filter %q\n", filter)
+	}
+
+	var filteredTasks []Task
+	switch filter {
+	case "--completed":
+		for _, task := range tasks {
+			if task.Done {
+				filteredTasks = append(filteredTasks, task)
+			}
+		}
+	case "--pending":
+		for _, task := range tasks {
+			if !task.Done {
+				filteredTasks = append(filteredTasks, task)
+			}
+		}
+	default:
+		filteredTasks = tasks
+	}
+
+	for _, task := range filteredTasks {
+		status := "❌"
+		if task.Done {
+			status = "✅"
+		}
+		fmt.Printf("[%s] %d: %s\n", status, task.ID, task.Description)
+	}
+	return nil
+}
+
 func addTask(tasks []Task, args []string) ([]Task, error) {
 	if len(args) == 0 {
 		return nil, errors.New("Error: Task description is required")
