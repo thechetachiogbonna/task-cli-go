@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -33,7 +35,7 @@ func main() {
 	case "list":
 		err = listTasks(tasks, args)
 	case "update":
-		updateTask(tasks, args)
+		tasks, err = updateTask(tasks, args)
 	case "delete":
 		deleteTask(tasks, args)
 	case "help", "-h", "--help":
@@ -148,5 +150,64 @@ func addTask(tasks []Task, args []string) ([]Task, error) {
 	return append(tasks, task), nil
 }
 
-func updateTask(tasks []Task, args []string) {}
+func updateTask(tasks []Task, args []string) ([]Task, error) {
+	parsedArgs, err := parseArgs(args)
+	if err != nil {
+		return tasks, err
+	}
+
+	id, ok := parsedArgs["id"]
+	if !ok {
+		fmt.Fprintf(os.Stderr, "Error: Task ID is required\n")
+		return tasks, errors.New("Task ID is required")
+	}
+
+	taskID, err := strconv.Atoi(id)
+	if err != nil {
+		return tasks, errors.New("Invalid task ID")
+	}
+
+	var task *Task
+	for _, t := range tasks {
+		if t.ID == taskID {
+			task = &t
+			break
+		}
+	}
+
+	if task == nil {
+		return tasks, errors.New("Task not found")
+	}
+
+	description, userProvidedDescription := parsedArgs["description"]
+	if userProvidedDescription {
+		task.Description = description
+	}
+
+	done, userProvidedDone := parsedArgs["done"]
+	if userProvidedDone {
+		task.Done = done == "true"
+	}
+
+	if !userProvidedDescription && !userProvidedDone {
+		return tasks, errors.New("No fields to update")
+	}
+
+	tasks[taskID-1] = *task
+
+	return tasks, nil
+}
+
 func deleteTask(tasks []Task, args []string) {}
+
+func parseArgs(args []string) (map[string]string, error) {
+	parsedArgs := make(map[string]string)
+	for _, arg := range args {
+		parts := strings.SplitN(arg, "=", 2)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("Invalid argument format: %q", arg)
+		}
+		parsedArgs[parts[0]] = parts[1]
+	}
+	return parsedArgs, nil
+}
