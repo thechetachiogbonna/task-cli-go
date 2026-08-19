@@ -188,6 +188,9 @@ func updateTask(tasks []Task, args []string) ([]Task, error) {
 	if userProvidedDone {
 		task.Done = done == "true"
 	}
+	if userProvidedDone && done != "true" && done != "false" {
+		return tasks, errors.New("Invalid value for done. Use true or false")
+	}
 
 	if !userProvidedDescription && !userProvidedDone {
 		return tasks, errors.New("No fields to update")
