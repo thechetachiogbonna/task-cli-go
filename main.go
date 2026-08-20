@@ -37,7 +37,7 @@ func main() {
 	case "update":
 		tasks, err = updateTask(tasks, args)
 	case "delete":
-		deleteTask(tasks, args)
+		tasks, err = deleteTask(tasks, args)
 	case "help", "-h", "--help":
 		printUsage()
 	default:
@@ -201,7 +201,46 @@ func updateTask(tasks []Task, args []string) ([]Task, error) {
 	return tasks, nil
 }
 
-func deleteTask(tasks []Task, args []string) {}
+func deleteTask(tasks []Task, args []string) ([]Task, error) {
+	parsedArgs, err := parseArgs(args)
+
+	if err != nil {
+		return nil, err
+	}
+
+	id, ok := parsedArgs["id"]
+	if !ok {
+		fmt.Fprintf(os.Stderr, "Error: Task ID is required\n")
+		return tasks, errors.New("Task ID is required")
+	}
+
+	taskID, err := strconv.Atoi(id)
+	if err != nil {
+		return tasks, errors.New("Invalid task ID")
+	}
+
+	var task *Task
+	var taskIndex int
+	for i, t := range tasks {
+		if t.ID == taskID {
+			task = &t
+			taskIndex = i
+			break
+		}
+	}
+
+	if taskIndex < 0 {
+		return nil, fmt.Errorf("task with id %d not found", taskID)
+	}
+
+	if task == nil {
+		return tasks, errors.New("Task not found")
+	}
+
+	tasks = append(tasks[:taskIndex], tasks[taskIndex+1:]...)
+
+	return tasks, nil
+}
 
 func parseArgs(args []string) (map[string]string, error) {
 	parsedArgs := make(map[string]string)
