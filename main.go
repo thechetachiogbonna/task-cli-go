@@ -94,11 +94,13 @@ func loadTasks(path string) ([]Task, error) {
 func listTasks(tasks []Task, args []string) error {
 	var filter string
 
-	if len(args) > 0 {
+	if len(args) == 0 {
+		filter = ""
+	} else if len(args) == 1 {
 		filter = args[0]
 	}
 
-	if filter == "-a" {
+	if filter == "-a" || filter == "" {
 		filter = "--all"
 	}
 
